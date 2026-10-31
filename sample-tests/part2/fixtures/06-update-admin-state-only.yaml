@@ -1,0 +1,11 @@
+desired:
+  name: Loopback88
+  ipv4: 10.255.88.1/32
+  description: IPA2026-SHUTDOWN-CHECK
+  admin_state: down
+
+current:
+  name: Loopback88
+  ipv4: 10.255.88.1/32
+  description: IPA2026-SHUTDOWN-CHECK
+  admin_state: up

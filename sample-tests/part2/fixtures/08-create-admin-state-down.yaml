@@ -1,0 +1,7 @@
+desired:
+  name: Loopback55
+  ipv4: 10.255.55.1/32
+  description: IPA2026-CREATE-DOWN
+  admin_state: down
+
+current: null
