@@ -17,6 +17,13 @@ DELETE_COMMAND = "no interface {interface_name}"
 
 ADMIN_DOWN = "administratively down"
 
+# IOS rejects "show ip interface <name>" when the interface does not exist.
+IOS_ERROR_MARKERS = (
+    "% Invalid input",
+    "% Incomplete command",
+    "% Ambiguous command",
+)
+
 
 def get_interface_state(
     router,
@@ -159,11 +166,17 @@ def _connect(router):
 def _default_netmiko_get(router, interface_name):
     connection = _connect(router)
 
+    command = IP_COMMAND.format(interface_name=interface_name)
+
     try:
-        ip_info = connection.send_command(
-            IP_COMMAND.format(interface_name=interface_name),
-            use_textfsm=True,
-        )
+        # Read the raw reply first: IOS answers "% Invalid input" for an
+        # interface that does not exist, and TextFSM raises on that text.
+        # An absent interface is not_found, not a backend failure.
+        if _is_ios_error(connection.send_command(command)):
+            ip_info = []
+        else:
+            ip_info = connection.send_command(command, use_textfsm=True)
+
         descriptions = connection.send_command(
             DESCRIPTION_COMMAND,
             use_textfsm=True,
@@ -175,6 +188,12 @@ def _default_netmiko_get(router, interface_name):
         raise RuntimeError("TextFSM could not parse the IOS output")
 
     return ip_info, descriptions
+
+
+def _is_ios_error(output):
+    """True when IOS rejected the command instead of returning data."""
+    text = str(output or "")
+    return any(marker in text for marker in IOS_ERROR_MARKERS)
 
 
 def _default_netmiko_delete(router, interface_name):
